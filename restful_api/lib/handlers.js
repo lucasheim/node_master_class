@@ -76,18 +76,103 @@ handlers._users.post = function(data, callback) {
 };
 
 // Users get
+// Required data: phone
+// Optional data: none
+// @TODO only let an authenticated user access their object.
 handlers._users.get = function(data, callback) {
-    
+    // Check that the phone number is valid
+    var phone = validations.validatePhone(data.queryStringObject.phone);
+    if (phone) {
+        // Lookup the user
+        _data.read("users", phone, function(err, data) {
+            if(!err && data) {
+                // Remove the hashed password from the user object before returning
+                delete data.hashedPassword;
+                callback(200, data);
+            } else {
+                callback(404);
+            }
+        });
+    } else {
+        callback(400, {"Error": "Missing required fields"});
+    }
 };
 
 // Users put
+// Required data: phone
+// Optional data: firstName, lastName, password (at least one must be specified)
+// @TODO Only let an authenticated user update their object
 handlers._users.put = function(data, callback) {
+    // Check for the required field
+    var phone = validations.validatePhone(data.payload.phone);
     
+    // Check for the optoinal fields
+    var firstName = validations.validateName(data.payload.firstName);
+    var lastName = validations.validateName(data.payload.lastName);
+    var password = validations.validateName(data.payload.password);
+
+    if(phone) {
+        // Error if nothing is sent to update
+        if (firstName || lastName || password) {
+            _data.read("users", phone, function(err, userData) {
+                if(!err && userData) {
+                    // Update the fields that are necessary
+                    if (firstName) {
+                        userData.firstName = firstName;
+                    }
+                    if (lastName) {
+                        userData.lastName = lastName;
+                    }
+                    if (password) {
+                        userData.hashedPassword = helpers.hash(password);
+                    }
+
+                    // Store the new updates
+                    _data.update("users", phone, userData, function(err) {
+                        if (!err) {
+                            callback(200);
+                        } else {
+                            console.log(err);
+                            callback(500, {"Error": "Could not update the user"});
+                        }
+                    });
+                } else {
+                    callback(400, {"Error": "The specified user does not exist"});
+                }
+            });
+        } else {
+            callback(400, {"Error": "Missing fields to update"});
+        }
+    } else {
+        callback(400, {"Error": "Missing required field"});
+    }
 };
 
 // Users delete
+// Required field: phone
+// @Todo Only let an authenticated user delete their object
+// @TODO Delete any other data files associated with this user
 handlers._users.delete = function(data, callback) {
-    
+    // Check that the phone number is valid
+    var phone = validations.validatePhone(data.queryStringObject.phone);
+    if (phone) {
+        // Lookup the user
+        _data.read("users", phone, function(err, data) {
+            if(!err && data) {
+                _data.delete("users", phone, function(err) {
+                    if(!err) {
+                        callback(200);
+                    } else {
+                        callback(500, {"Error": "Could not delete the specified user"});
+                    }
+                });
+            } else {
+                callback(400, {"Error": "Could not find the specified user"});
+            }
+        });
+    } else {
+        callback(400, {"Error": "Missing required fields"});
+    }
 };
 
 // Ping handler
