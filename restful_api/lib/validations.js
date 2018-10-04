@@ -18,6 +18,17 @@ validations.validateTosAgreement = function(tosAgreement) {
     return typeof(tosAgreement) === "boolean" && tosAgreement;
 };
 
+validations.validateId = function(id) {
+    if (isString(id) && hasIdLength(id.trim())) {
+        return id.trim();
+    }
+    return false;
+}
+
+function hasIdLength(id) {
+    return id.length === 20;
+}
+
 function hasPhoneLenght(phoneNumber) {
     return phoneNumber.length === 10;
 }

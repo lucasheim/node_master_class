@@ -234,8 +234,24 @@ handlers._tokens.post = function(data, callback) {
 };
 
 // Tokens - get
+// Required data: id
+// Optional data: none
 handlers._tokens.get = function(data, callback) {
-
+    // Check that the id they sent is valid
+    // Check that the phone number is valid
+    var id = validations.validateId(data.queryStringObject.id);
+    if (id) {
+        // Lookup the token
+        _data.read("tokens", id, function(err, tokenData) {
+            if(!err && tokenData) {
+                callback(200, tokenData);
+            } else {
+                callback(404);
+            }
+        });
+    } else {
+        callback(400, {"Error": "Missing required fields"});
+    }
 };
 
 // Tokens - put
