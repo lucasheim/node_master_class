@@ -255,8 +255,37 @@ handlers._tokens.get = function(data, callback) {
 };
 
 // Tokens - put
+// Required data: id, extend
+// Optional data: none
 handlers._tokens.put = function(data, callback) {
+    var id = validations.validateId(data.queryStringObject.id);
+    var extend = validations.validateTosAgreement(data.queryStringObject.extend);
+    if (id && extend) {
+        // Lookup the token
+        _data.read("tokens", id, function(err, tokenData) {
+            if (!err && tokenData) {
+                // Check to make sure token isn't already expired
+                if (tokenData.expires > Date.now()) {
+                    tokenData.expires = Date.now() + 1000 * 60 * 60;
 
+                    // Store update
+                    _data.update("tokens", id, tokenData, function(err) {
+                        if (!err) {
+                            callback(200);
+                        } else {
+                            callback(500, {"Error": "Could not update the token\'s expiration"});
+                        }
+                    });
+                } else {
+                    callback(400, {"Error": "The token has already expired and cannot be extended"});
+                }
+            } else {
+                callback(400, {"Error": "Specified token does not exist"});
+            }
+        });
+    } else {
+        callback(400, {"Error": "Missing required fields or fields are invalid"});
+    }
 };
 
 // Tokens - delete
